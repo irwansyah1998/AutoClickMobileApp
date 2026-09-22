@@ -2,8 +2,10 @@ import 'package:autoclickmobileapp/core/constants/app_constants.dart';
 import 'package:autoclickmobileapp/core/theme/colors.dart';
 import 'package:autoclickmobileapp/core/theme/dimensions.dart';
 import 'package:autoclickmobileapp/core/theme/typography.dart';
+import 'package:autoclickmobileapp/core/widgets/premium_components.dart';
 import 'package:autoclickmobileapp/data/models/click_configuration.dart';
 import 'package:autoclickmobileapp/data/models/click_point.dart';
+import 'package:autoclickmobileapp/features/clicker/domain/clicker_status.dart';
 import 'package:autoclickmobileapp/features/clicker/presentation/clicker_view_model.dart';
 import 'package:flutter/material.dart';
 
@@ -49,149 +51,133 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppDimensions.paddingLarge),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Auto Clicker', style: AppTypography.title.copyWith(color: AppColors.textPrimary)),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.success.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Row(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(AppDimensions.paddingLarge),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        const Icon(Icons.circle, size: 8, color: AppColors.success),
-                        const SizedBox(width: 6),
-                        Text(
-                          _viewModel.statusLabel(),
-                          style: AppTypography.caption.copyWith(color: AppColors.success),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Auto Clicker',
+                              style: theme.textTheme.headlineMedium?.copyWith(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.8,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _viewModel.statusLabel(),
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        StatusBadge(
+                          label: _viewModel.statusLabel(),
+                          active: _viewModel.status == ClickerStatus.running,
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: FilledButton(
-                  onPressed: _start,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primaryStrong,
-                    foregroundColor: AppColors.background,
-                  ),
-                  child: const Text('START'),
+                    const SizedBox(height: 24),
+                    PrimaryActionButton(
+                      label: 'START',
+                      onPressed: _start,
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        SecondaryActionButton(
+                          label: 'PAUSE',
+                          onPressed: _pause,
+                        ),
+                        const SizedBox(width: 12),
+                        SecondaryActionButton(
+                          label: 'STOP',
+                          onPressed: _stop,
+                          isPrimary: false,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    AppSectionCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              MetricTile(
+                                label: 'Clicks',
+                                value: '${_viewModel.clickCount}',
+                              ),
+                              MetricTile(
+                                label: 'Elapsed',
+                                value: _viewModel.formatElapsed(),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          const Divider(color: AppColors.divider),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Current Point',
+                            style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            '${_viewModel.currentPointIndex + 1} / ${_viewModel.enabledPoints().length}',
+                            style: AppTypography.heading.copyWith(color: AppColors.primary),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    AppSectionCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Configuration',
+                            style: AppTypography.heading.copyWith(color: AppColors.textPrimary),
+                          ),
+                          const SizedBox(height: 16),
+                          CompactInfoRow(
+                            label: 'Interval',
+                            value: '${_viewModel.configuration.intervalMs} ms',
+                          ),
+                          CompactInfoRow(
+                            label: 'Click Points',
+                            value: '${_viewModel.configuration.points.length}',
+                          ),
+                          CompactInfoRow(
+                            label: 'Loops',
+                            value: _viewModel.configuration.infiniteLoop ? 'Unlimited' : '${_viewModel.configuration.loopCount}',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _pause,
-                      child: const Text('PAUSE'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _stop,
-                      child: const Text('STOP'),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              _buildMetricCard(),
-              const SizedBox(height: 20),
-              _buildConfigPanel(),
-            ],
-          ),
+            );
+          },
         ),
-      ),
-    );
-  }
-
-  Widget _buildMetricCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppDimensions.paddingLarge),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _metricItem('Clicks', '${_viewModel.clickCount}'),
-              _metricItem('Elapsed', _viewModel.formatElapsed()),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Divider(color: AppColors.divider),
-          const SizedBox(height: 12),
-          Text('Current Point', style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
-          const SizedBox(height: 6),
-          Text('${_viewModel.currentPointIndex + 1} / ${_viewModel.enabledPoints().length}', style: AppTypography.heading.copyWith(color: AppColors.primary)),
-        ],
-      ),
-    );
-  }
-
-  Widget _metricItem(String title, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
-        const SizedBox(height: 6),
-        Text(value, style: AppTypography.heading.copyWith(color: AppColors.textPrimary)),
-      ],
-    );
-  }
-
-  Widget _buildConfigPanel() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppDimensions.paddingLarge),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Configuration', style: AppTypography.heading.copyWith(color: AppColors.textPrimary)),
-          const SizedBox(height: 16),
-          _infoRow('Click Interval', '${_viewModel.configuration.intervalMs} ms'),
-          _infoRow('Delay', '${_viewModel.configuration.pointDelayMs} ms'),
-          _infoRow('Loop', _viewModel.configuration.infiniteLoop ? 'Unlimited' : '${_viewModel.configuration.loopCount}'),
-          _infoRow('Click Points', '${_viewModel.configuration.points.length}'),
-        ],
-      ),
-    );
-  }
-
-  Widget _infoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: AppTypography.body.copyWith(color: AppColors.textSecondary)),
-          Text(value, style: AppTypography.body.copyWith(color: AppColors.textPrimary)),
-        ],
       ),
     );
   }
